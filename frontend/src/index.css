@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  
+  --color-background: #f7f5f0;
+  --color-foreground: #192a27;
+  --color-card: #ffffff;
+  --color-card-foreground: #192a27;
+  --color-primary: #183f3a;
+  --color-primary-foreground: #f7f5f0;
+  --color-secondary: #ebd9c8;
+  --color-secondary-foreground: #223834;
+  --color-muted: #e5ded5;
+  --color-muted-foreground: #5a6e69;
+  --color-accent: #f2b35b;
+  --color-accent-foreground: #2d1e08;
+  --color-border: #dcd3c7;
+  --color-input: #cfc4b5;
+  --color-ring: #183f3a;
+}
+
+:root {
+  --background: #f7f5f0;
+  --foreground: #192a27;
+  --card: #ffffff;
+  --card-foreground: #192a27;
+  --primary: #183f3a;
+  --primary-foreground: #f7f5f0;
+  --secondary: #eae3d8;
+  --secondary-foreground: #223834;
+  --muted: #e5ded5;
+  --muted-foreground: #5a6e69;
+  --accent: #f2b35b;
+  --accent-foreground: #2d1e08;
+  --border: #dcd3c7;
+  --input: #cfc4b5;
+  --ring: #183f3a;
+  --radius: 0.85rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
