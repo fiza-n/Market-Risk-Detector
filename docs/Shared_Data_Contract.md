@@ -43,7 +43,7 @@ There's no login/accounts in this MVP (spec §4), so there's no `user_id`. Inste
 ```
 
 ## 4. Object #3 — Scam Detection Result (internal)
-**Owner: Person C.** Backend + Groq (Llama 3.3 70B) call. Also internal.
+**Owner: Person C.** Backend + Google GenAI (gemini-2.5-flash) call. Also internal.
 
 ```json
 {
