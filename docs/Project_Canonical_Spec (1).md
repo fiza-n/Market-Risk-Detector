@@ -28,7 +28,7 @@ The buyer pastes a listing's text (title, description, price, category, optional
 ## 6. Fixed Tech Stack — use exactly this, no substitutions
 - **Frontend:** React + Tailwind CSS
 - **Backend:** Python + Flask (single app, not Node/Express)
-- **AI/LLM:** Groq API, Llama 3.3 70B, free tier
+- **AI/LLM:** Groq API, llama-3.1-8b-instant
 - **Database:** MongoDB Atlas, free tier (M0)
 - **Deployment:** Vercel (frontend) + Render or Railway (Flask backend)
 - **Shared data contract:** every score response returns this exact JSON shape:
