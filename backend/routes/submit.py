@@ -1,9 +1,16 @@
+import logging
 import uuid
 from datetime import datetime, timezone
+
 from flask import Blueprint, request, jsonify
+
 from merge.combine import combine_results
+from price_intelligence.deviation import analyze_price
+
+logger = logging.getLogger(__name__)
 
 submit_bp = Blueprint('submit', __name__)
+
 
 def _fallback_scam_analysis(title, description, price, seller_info):
     text = f"{title} {description} {seller_info or ''}".lower()
@@ -11,7 +18,7 @@ def _fallback_scam_analysis(title, description, price, seller_info):
     scam_score = 0
 
     if any(kw in text for kw in ['advance', 'jazzcash', 'easypaisa', 'pay first', 'token money', 'bank transfer']):
-        flags.push("Advance payment pressure detected via mobile wallet / bank transfer before delivery.") if hasattr(flags, 'push') else flags.append("Advance payment pressure detected via mobile wallet / bank transfer before delivery.")
+        flags.append("Advance payment pressure detected via mobile wallet / bank transfer before delivery.")
         scam_score += 45
 
     if any(kw in text for kw in ['cod not available', 'no cod', 'delivery only']):
@@ -35,21 +42,6 @@ def _fallback_scam_analysis(title, description, price, seller_info):
         "tip": tip
     }
 
-def _fallback_price_analysis(price, category):
-    # Basic sanity check fallback
-    price_val = float(price) if price else 0
-    flags = []
-    deviation_score = 0
-
-    if category == "Mobile Phones" and price_val > 0 and price_val < 30000:
-        flags.append("Price is significantly below average market reference for smartphones.")
-        deviation_score = 30
-
-    return {
-        "price_deviation_score": deviation_score,
-        "price_flags": flags,
-        "category_reference_range": {"min": 30000, "max": 250000}
-    }
 
 @submit_bp.route('/submit', methods=['POST'])
 def submit_listing():
@@ -67,20 +59,18 @@ def submit_listing():
     submission_id = str(uuid.uuid4())
     submitted_at = datetime.now(timezone.utc).isoformat()
 
-    # Attempt to import Person B & Person C logic dynamically if available
-    price_analysis = None
-    scam_analysis = None
+    # Person B's price-deviation logic. No fallback needed here — this is
+    # deterministic local code (no external API call), so if it throws,
+    # that's a real bug worth seeing, not something to paper over.
+    price_analysis = analyze_price(price, category)
 
-    try:
-        from price_intelligence.deviation import calculate_price_deviation
-        price_analysis = calculate_price_deviation(price, category)
-    except Exception:
-        price_analysis = _fallback_price_analysis(price, category)
-
+    # Person C's scam-detection logic depends on an external LLM call, so a
+    # fallback is legitimate here — but log it, don't swallow it silently.
     try:
         from scam_detection.groq_client import analyze_scam_patterns
         scam_analysis = analyze_scam_patterns(title, description, seller_info)
     except Exception:
+        logger.exception("Scam detection failed for submission %s, using fallback", submission_id)
         scam_analysis = _fallback_scam_analysis(title, description, price, seller_info)
 
     # Combine into Object #4
@@ -89,10 +79,9 @@ def submit_listing():
 
     # Optional Mongo DB persistence if DB client is configured
     try:
-        from db.client import get_db
-        db = get_db()
-        if db is not None:
-            db.submissions.insert_one({
+        from db import db as mongo_db
+        if mongo_db is not None:
+            mongo_db.submissions.insert_one({
                 "_id": submission_id,
                 "input": {
                     "title": title,
@@ -108,8 +97,7 @@ def submit_listing():
                 "feedback": None,
                 "created_at": submitted_at
             })
-    except Exception as e:
-        # Non-blocking log if DB is unavailable
-        pass
+    except Exception:
+        logger.exception("Failed to persist submission %s to MongoDB", submission_id)
 
     return jsonify(result), 200
