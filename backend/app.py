@@ -1,4 +1,6 @@
+import os
 from flask import Flask
+from flask_cors import CORS
 from config import Config
 from routes.submit import submit_bp
 from routes.feedback import feedback_bp
@@ -8,12 +10,24 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Enable CORS for frontend requests
-    try:
-        from flask_cors import CORS
-        CORS(app, resources={r"/api/*": {"origins": "*"}})
-    except ImportError:
-        pass
+    # Allowed origins logic
+    allowed_origins = os.environ.get("FRONTEND_URL")
+    
+    if allowed_origins:
+        # Supports comma-separated list for multiple origins (e.g., prod + preview domains)
+        origins_list = [origin.strip() for origin in allowed_origins.split(",") if origin.strip()]
+    else:
+        # Fallback for local development or prior to frontend deployment
+        origins_list = ["http://localhost:3000", "http://127.0.0.1:5000", "http://localhost:5173"]
+
+    # Configure CORS with explicit preflight handling
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": origins_list,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
 
     # Register blueprints
     app.register_blueprint(submit_bp, url_prefix='/api')
