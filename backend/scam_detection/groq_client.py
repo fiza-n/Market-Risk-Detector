@@ -23,7 +23,7 @@ class ScamAnalysisSchema(BaseModel):
 def analyze_scam_patterns(title: str, description: str, seller_info: str | None) -> dict:
     """
     Analyzes listing title, description, and seller_info for scam patterns.
-    Uses Google GenAI SDK with gemini-2.5-flash.
+    Uses Google GenAI SDK with gemini-3.6-flash.
     
     Returns:
     {
@@ -62,7 +62,7 @@ def analyze_scam_patterns(title: str, description: str, seller_info: str | None)
     for attempt in range(max_attempts):
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-3.6-flash',
                 contents=prompt_content,
                 config=gen_config,
             )
