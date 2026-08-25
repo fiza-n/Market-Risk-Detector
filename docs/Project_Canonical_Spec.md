@@ -7,10 +7,10 @@ Use this exact document as context when asking any AI tool to generate architect
 - **Event:** DoraHacks 2.0 "Vibe Coding" hackathon
 - **Build deadline:** Aug 25, 2026 | **Launch/feedback phase:** Aug 25–29 | **Product Hunt launch:** Aug 29–30
 
-## 2. Problem Statement (use verbatim)
+## 2. Problem Statement (verbatim)
 Buyers on Pakistani peer-to-peer marketplaces (OLX Pakistan, local Facebook Marketplace groups, Daraz third-party sellers) have no way to judge whether a listing is legitimate until they are already mid-conversation with the seller — by which point they have often shared contact info or been pressured into an advance payment. There is no upfront trust signal before engaging.
 
-## 3. Solution (use verbatim)
+## 3. Solution (verbatim)
 The buyer pastes a listing's text (title, description, price, category, optional seller info). The system returns a 0–100 trust score with plain-English red flags in seconds, so the buyer decides whether to engage before investing time or money — not after.
 
 ## 4. Scope Boundary — Fixed
@@ -23,18 +23,18 @@ The buyer pastes a listing's text (title, description, price, category, optional
 2. AI risk analysis tuned to Pakistani marketplace scam patterns
 3. Trust score (0–100) + plain-English red-flag breakdown
 4. Feedback capture (thumbs up/down — "was this accurate?")
-5. Share/result card (for Product Hunt)
+5. Share/result card (for Product Hunt & social sharing)
 
 ## 6. Fixed Tech Stack — use exactly this, no substitutions
 - **Frontend:** React + Tailwind CSS
-- **Backend:** Python + Flask (single app, not Node/Express)
-- **AI/LLM:** Groq API, llama-3.1-8b-instant
-- **Database:** MongoDB Atlas, free tier (M0)
-- **Deployment:** Vercel (frontend) + Render or Railway (Flask backend)
+- **Backend:** Python + Flask (single app)
+- **AI/LLM:** Google GenAI SDK (`gemini-3.6-flash`) with structured output schema & fallback rules
+- **Database:** MongoDB Atlas, free tier (M0) with local mock fallback
+- **Deployment:** Vercel (frontend) + Render/Railway/Vercel (Flask backend)
 - **Shared data contract:** every score response returns this exact JSON shape:
-```
+```json
 {
-  "score": 0-100,
+  "score": 0,
   "verdict": "low_risk | medium_risk | high_risk",
   "flags": ["string", "..."],
   "tip": "string"
@@ -42,19 +42,16 @@ The buyer pastes a listing's text (title, description, price, category, optional
 ```
 
 ## 7. Fixed Role Division — use exactly these labels, always in this order
-- **Person A — Buyer Experience:** owns the full UI journey — the paste-form and the results/feedback screens. Primarily frontend, with the light backend endpoints that serve those screens. No AI work.
-- **Person B — Price Intelligence:** owns the market price-reference data and the price-deviation calculation (is this listing's price abnormal for its category). Backend only. No frontend, no AI.
-- **Person C — Scam Detection:** owns the Groq LLM integration, scam-pattern prompt logic, and the feedback loop that improves detection over time. Backend + AI. No frontend.
+- **Person A — Buyer Experience:** owns the full UI journey — the paste-form and the results/feedback screens. Primarily frontend, with the light backend endpoints (`/api/submit`, `/api/feedback`) that serve those screens.
+- **Person B — Price Intelligence:** owns the market price-reference data and the price-deviation calculation (is this listing's price abnormal for its category). Backend only.
+- **Person C — Scam Detection:** owns the Gemini LLM integration, scam-pattern prompt logic, and the feedback loop that improves detection over time. Backend + AI.
 
-## 8. Fixed Data Flow (for anyone generating architecture/workflow diagrams)
+## 8. Fixed Data Flow
 1. Buyer submits listing via Person A's form
-2. Request splits into two parallel checks: Person B's price-deviation calculation, and Person C's Groq-based scam-pattern analysis
+2. Request splits into two parallel checks: Person B's price-deviation calculation, and Person C's Gemini-based scam-pattern analysis
 3. Both results merge into one combined trust score + flag list (matches the JSON contract in section 6)
 4. Person A's results screen displays the combined output to the buyer
 5. Buyer submits feedback (thumbs up/down), which feeds back into Person C's detection logic
 
-## 9. Named Competitors (for differentiation context, do not treat as features to copy)
+## 9. Named Competitors
 Scamnova, DealFlip AI, WatchdogAI/Spottable — all solve the generic "paste and score" mechanic for Western marketplaces. This project's differentiation is the Pakistani-market localization in section 4, not the score mechanic itself.
-
----
-**Instruction to any AI reading this:** Treat sections 1–8 as fixed constraints, not suggestions. If asked to design architecture, workflow, UI, or code, stay strictly within this scope, this stack, and these three role labels — do not rename roles, add features, or substitute technologies.
