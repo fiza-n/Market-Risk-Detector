@@ -10,6 +10,36 @@ const FORCE_MOCK = false;
 const API_BASE_URL = '/api';
 
 /**
+ * Retrieve or generate the anonymous client session ID.
+ * Persists in localStorage.
+ * @returns {string} The client session ID.
+ */
+export function getClientSessionId() {
+  try {
+    let sessionId = localStorage.getItem('client_session_id');
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('client_session_id', sessionId);
+    }
+    return sessionId;
+  } catch (e) {
+    console.warn('LocalStorage or Cryptography API is unavailable. Using temporary session ID.', e);
+    // Temporary session ID for session lifespan
+    if (!window.__temp_session_id) {
+      window.__temp_session_id = 'session-' + Math.random().toString(36).substring(2, 15);
+    }
+    return window.__temp_session_id;
+  }
+}
+
+// Initialize on app/module load
+try {
+  getClientSessionId();
+} catch (e) {
+  // Fallback gracefully
+}
+
+/**
  * Submit listing for risk analysis
  * @param {Object} listingData - { title, description, price, category, seller_info }
  * @returns {Promise<Object>} - Object #4: { submission_id, score, verdict, flags, tip }
@@ -31,6 +61,7 @@ export async function submitListing(listingData) {
         price: Number(listingData.price) || 0,
         category: listingData.category || CATEGORIES[0],
         seller_info: listingData.seller_info || null,
+        client_session_id: getClientSessionId(),
       }),
     });
 

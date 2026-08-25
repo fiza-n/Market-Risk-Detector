@@ -29,7 +29,7 @@ export function FeedbackButtons({ submissionId }) {
   return (
     <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-3xl bg-secondary p-6 sm:flex-row sm:items-center border border-border">
       <div>
-        <h3 className="font-bold text-foreground text-base">Was this analysis accurate?</h3>
+        <h3 className="font-bold text-foreground text-base">Was this assessment helpful/accurate?</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           Your feedback sharpens pattern detection for future Pakistani marketplace buyers.
         </p>
@@ -39,14 +39,14 @@ export function FeedbackButtons({ submissionId }) {
         {submitted ? (
           <div className="inline-flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-xs font-bold text-primary">
             <CheckCircle2 size={16} />
-            Feedback Received! Thank you.
+            Thanks for your feedback
           </div>
         ) : (
           <>
             <button
               onClick={() => handleVote(true)}
               disabled={isSubmitting}
-              aria-label="Yes, this analysis was accurate"
+              aria-label="Yes, this assessment was helpful and accurate"
               className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition-all ${
                 selectedVote === 'up'
                   ? 'bg-primary text-primary-foreground border-primary'
@@ -54,13 +54,13 @@ export function FeedbackButtons({ submissionId }) {
               }`}
             >
               <ThumbsUp size={16} />
-              Accurate
+              Yes
             </button>
 
             <button
               onClick={() => handleVote(false)}
               disabled={isSubmitting}
-              aria-label="No, this analysis was inaccurate"
+              aria-label="No, this assessment was not helpful or accurate"
               className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition-all ${
                 selectedVote === 'down'
                   ? 'bg-accent text-accent-foreground border-accent'
@@ -68,7 +68,7 @@ export function FeedbackButtons({ submissionId }) {
               }`}
             >
               <ThumbsDown size={16} />
-              Inaccurate
+              No
             </button>
           </>
         )}
