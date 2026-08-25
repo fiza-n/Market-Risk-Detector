@@ -6,10 +6,10 @@ def analyze_price(price: float, category: str) -> dict:
     { price_deviation_score, price_flags, category_reference_range }
     """
     ref = get_reference(category)
-    if not ref:
+    if not ref or (ref["typical_min_price"] == 0 and ref["typical_max_price"] == 0):
         return {
-            "price_deviation_score": 0,
-            "price_flags": [],
+            "price_deviation_score": 0, 
+            "price_flags": [], 
             "category_reference_range": {"min": 0, "max": 0}
         }
 
