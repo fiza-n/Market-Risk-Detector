@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/:path*", "destination": "https://market-risk-detector-kcdn.vercel.app/api/:path*" }
   ]
 }
