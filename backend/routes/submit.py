@@ -46,6 +46,7 @@ def _fallback_scam_analysis(title, description, price, seller_info):
 @submit_bp.route('/submit', methods=['POST'])
 def submit_listing():
     data = request.get_json() or {}
+    client_session_id = data.get('client_session_id')
 
     title = data.get('title', '').strip()
     description = data.get('description', '').strip()
@@ -89,6 +90,7 @@ def submit_listing():
                     "price": price,
                     "category": category,
                     "seller_info": seller_info,
+                    "client_session_id": client_session_id,
                     "submitted_at": submitted_at
                 },
                 "price_analysis": price_analysis,

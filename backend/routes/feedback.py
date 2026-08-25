@@ -1,6 +1,8 @@
+import logging
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 
+logger = logging.getLogger(__name__)
 feedback_bp = Blueprint('feedback', __name__)
 
 @feedback_bp.route('/feedback', methods=['POST'])
@@ -21,15 +23,14 @@ def submit_feedback():
     }
 
     try:
-        from db.client import get_db
-        db = get_db()
-        if db is not None:
-            db.submissions.update_one(
+        from db import db as mongo_db
+        if mongo_db is not None:
+            mongo_db.submissions.update_one(
                 {"_id": submission_id},
                 {"$set": {"feedback": feedback_doc}}
             )
     except Exception:
-        pass
+        logger.exception("Failed to persist feedback for submission %s", submission_id)
 
     return jsonify({
         "success": True,
