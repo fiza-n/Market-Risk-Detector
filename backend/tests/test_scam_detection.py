@@ -116,24 +116,20 @@ class TestScamDetection(unittest.TestCase):
 
     def test_feedback_loop_import_failure(self):
         # 5a. get_recent_correction_hints returns "" without raising when the db import fails.
-        with patch.dict("sys.modules", {"db.client": None}):
-            # Attempt to run hints retrieval when importing db.client fails
+        with patch.dict("sys.modules", {"db": None}):
             hints = get_recent_correction_hints()
             self.assertEqual(hints, "")
 
-    @patch("db.client.get_db", return_value=None, create=True)
-    def test_feedback_loop_get_db_none(self, mock_get_db):
-        # 5b. get_recent_correction_hints returns "" without raising when get_db() returns None.
+    @patch("db.db", None)
+    def test_feedback_loop_db_none(self):
+        # 5b. get_recent_correction_hints returns "" without raising when db.db is None.
         hints = get_recent_correction_hints()
         self.assertEqual(hints, "")
 
-    @patch("db.client.get_db", create=True)
-    def test_feedback_loop_success_parsing(self, mock_get_db):
+    @patch("db.db")
+    def test_feedback_loop_success_parsing(self, mock_db):
         # Positive path: ensure database entries are retrieved and parsed correctly
-        mock_db = MagicMock()
         mock_cursor = MagicMock()
-        
-        # Mock cursor returned by find().sort().limit()
         mock_cursor.sort.return_value.limit.return_value = [
             {
                 "input": {
@@ -149,8 +145,7 @@ class TestScamDetection(unittest.TestCase):
             }
         ]
         mock_db.submissions.find.return_value = mock_cursor
-        mock_get_db.return_value = mock_db
-        
+
         hints = get_recent_correction_hints()
         self.assertIn("Bad Phone", hints)
         self.assertIn("send token money", hints)
