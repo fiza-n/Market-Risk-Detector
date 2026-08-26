@@ -63,24 +63,28 @@ export default function App() {
           <nav className="hidden items-center gap-7 text-sm font-medium md:flex">
             <button
               onClick={() => navTo('home')}
+              aria-current={view === 'home' ? 'page' : undefined}
               className={`hover:text-primary transition-colors ${view === 'home' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
             >
               Home
             </button>
             <button
               onClick={() => navTo('submit')}
+              aria-current={view === 'submit' ? 'page' : undefined}
               className={`hover:text-primary transition-colors ${view === 'submit' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
             >
               Check a Listing
             </button>
             <button
               onClick={() => navTo('how')}
+              aria-current={view === 'how' ? 'page' : undefined}
               className={`hover:text-primary transition-colors ${view === 'how' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
             >
               How It Works
             </button>
             <button
               onClick={() => navTo('about')}
+              aria-current={view === 'about' ? 'page' : undefined}
               className={`hover:text-primary transition-colors ${view === 'about' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
             >
               About

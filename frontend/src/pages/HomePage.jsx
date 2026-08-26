@@ -8,7 +8,7 @@ export function HomePage({ onStartChecking, onNavigateToHowItWorks }) {
       <section className="mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-16 md:grid-cols-[1.1fr_.9fr] md:items-center md:pt-24">
         <div>
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 font-mono text-xs text-primary shadow-xs">
-            <span className="size-2 rounded-full bg-emerald-600 animate-pulse" />
+            <span className="size-2 rounded-full bg-emerald-600 animate-pulse" aria-hidden="true" />
             Built for buyers in Pakistan
           </div>
 
@@ -38,7 +38,10 @@ export function HomePage({ onStartChecking, onNavigateToHowItWorks }) {
         </div>
 
         {/* Visual Live Scan Card Preview (v0 Reference Reimplementation) */}
-        <div className="relative rounded-[2rem] bg-primary p-7 text-primary-foreground md:rotate-2 md:p-9 shadow-xl border border-primary/20">
+        <div
+          aria-hidden="true"
+          className="relative rounded-[2rem] bg-primary p-7 text-primary-foreground md:rotate-2 md:p-9 shadow-xl border border-primary/20"
+        >
           <div className="flex items-center justify-between border-b border-primary-foreground/20 pb-5">
             <span className="font-mono text-xs uppercase tracking-[.18em] text-primary-foreground/80 font-bold">
               Live Scan Mockup / 02
