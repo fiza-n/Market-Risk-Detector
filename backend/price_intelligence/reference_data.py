@@ -1,7 +1,4 @@
 from datetime import datetime, timezone
-from db import db
-
-category_price_references = db["category_price_references"]
 
 DEFAULT_CATEGORIES = [
     {"category": "Mobile Phones", "typical_min_price": 15000, "typical_max_price": 250000},
@@ -15,14 +12,33 @@ DEFAULT_CATEGORIES = [
 
 def seed_categories():
     """Run once to populate category_price_references. Safe to re-run — clears and reinserts."""
-    category_price_references.delete_many({})
-    for cat in DEFAULT_CATEGORIES:
-        cat["updated_at"] = datetime.now(timezone.utc).isoformat()
-    category_price_references.insert_many(DEFAULT_CATEGORIES)
-    print(f"Seeded {len(DEFAULT_CATEGORIES)} categories")
+    try:
+        from db import db
+        if db is not None:
+            category_price_references = db["category_price_references"]
+            category_price_references.delete_many({})
+            for cat in DEFAULT_CATEGORIES:
+                cat["updated_at"] = datetime.now(timezone.utc).isoformat()
+            category_price_references.insert_many(DEFAULT_CATEGORIES)
+            print(f"Seeded {len(DEFAULT_CATEGORIES)} categories")
+    except Exception as e:
+        print(f"Could not seed categories to DB: {e}")
 
 def get_reference(category: str):
-    return category_price_references.find_one({"category": category})
+    try:
+        from db import db
+        if db is not None:
+            ref = db["category_price_references"].find_one({"category": category})
+            if ref:
+                return ref
+    except Exception:
+        pass
+
+    # Fallback to in-memory DEFAULT_CATEGORIES if DB is offline or category not in DB
+    for cat in DEFAULT_CATEGORIES:
+        if cat["category"] == category:
+            return cat
+    return None
 
 if __name__ == "__main__":
-    seed_categories()
+    seed_categories()

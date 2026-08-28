@@ -135,11 +135,12 @@ export function ListingForm({ onSubmit, loading }) {
         <button
           type="submit"
           disabled={loading || !formData.title || !formData.description}
+          aria-busy={loading}
           className="mt-8 w-full rounded-xl bg-primary px-5 py-3.5 font-bold text-primary-foreground disabled:opacity-60 transition-all flex items-center justify-center gap-2 hover:bg-primary/90 shadow-md shadow-primary/10"
         >
           {loading ? (
             <>
-              <span className="inline-block size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></span>
+              <span aria-hidden="true" className="inline-block size-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></span>
               Running AI Risk Analysis...
             </>
           ) : (

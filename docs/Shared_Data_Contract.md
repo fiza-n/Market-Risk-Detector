@@ -1,22 +1,20 @@
 # SHARED DATA CONTRACT — Marketplace Risk Detector
 
-Companion doc to `Project_Canonical_Spec.md`. Read that first for scope/roles/deadlines — this doc only covers **data shapes**: what objects exist, who owns each one, and what MongoDB actually stores. All three of you should work from this exact document so field names never drift between frontend, Person B's code, and Person C's code.
-
-Two things below are **not fixed by the canonical spec** — they're my best-guess defaults, flagged clearly. Confirm them as a team before writing code; changing a field name after Day 2 is expensive.
+Companion doc to `Project_Canonical_Spec.md`. Read that first for scope/roles/deadlines — this doc covers **data shapes**: what objects exist, who owns each one, and what MongoDB stores. All team members work from this exact document so field names never drift between frontend, Person B's code, and Person C's code.
 
 ---
 
-## 1. The One ID That Ties Everything Together
+## 1. The ID That Ties Everything Together
 
-There's no login/accounts in this MVP (spec §4), so there's no `user_id`. Instead:
+There is no login/accounts in this MVP (spec §4). Instead:
 
 - **`submission_id`** — a UUID generated server-side the moment a buyer submits the paste-form. Every object below (input, price analysis, scam analysis, merged result, feedback) carries this same ID. Think of it as the spine of one "listing check."
-- **`client_session_id`** *(optional, my suggestion)* — a throwaway ID the frontend generates (e.g. `crypto.randomUUID()` kept in memory/localStorage) purely so the UI can say "here's your last result" during the session. Not part of the DB contract, not required — drop it if it adds friction.
+- **`client_session_id`** — a throwaway ID the frontend generates (`crypto.randomUUID()` stored in localStorage) purely so the UI can track anonymous buyer sessions.
 
 ---
 
 ## 2. Object #1 — Listing Input
-**Owner: Person A** (paste-form + the endpoint that receives it)
+**Owner: Person A** (paste-form + `/api/submit` endpoint)
 
 ```json
 {
@@ -24,51 +22,59 @@ There's no login/accounts in this MVP (spec §4), so there's no `user_id`. Inste
   "title": "string",
   "description": "string",
   "price": "number (PKR)",
-  "category": "string (see §7 — enum needs team decision)",
+  "category": "string (Mobile Phones | Electronics | Vehicles | Furniture | Fashion | Property/Rent | Other)",
   "seller_info": "string | null",
+  "client_session_id": "string | null",
   "submitted_at": "ISO 8601 timestamp"
 }
 ```
 
+---
+
 ## 3. Object #2 — Price Intelligence Result (internal)
-**Owner: Person B.** Backend-only, never sent directly to the buyer — it feeds the merge step.
+**Owner: Person B** (`price_intelligence/deviation.py`). Backend-only, feeds the merge step.
 
 ```json
 {
-  "submission_id": "string",
-  "price_deviation_score": "number 0-100 (higher = more suspicious)",
+  "price_deviation_score": "number 0-100 (higher = more suspicious/underpriced)",
   "price_flags": ["string", "..."],
   "category_reference_range": { "min": "number", "max": "number" }
 }
 ```
 
+---
+
 ## 4. Object #3 — Scam Detection Result (internal)
-**Owner: Person C.** Backend + Google GenAI (gemini-2.5-flash) call. Also internal.
+**Owner: Person C** (`scam_detection/groq_client.py`). Uses Google GenAI SDK (`gemini-3.6-flash`). Internal.
 
 ```json
 {
-  "submission_id": "string",
   "scam_score": "number 0-100 (higher = more suspicious)",
   "scam_flags": ["string", "..."],
-  "tip": "string (plain-English advice — becomes the final 'tip' field)",
-  "raw_llm_response": "string (optional, debug/logging only — never sent to frontend)"
+  "tip": "string (plain-English advice for the buyer)",
+  "raw_llm_response": "string (debug/logging only — never sent to frontend)"
 }
 ```
 
-## 5. Object #4 — Final Result (the fixed API contract from spec §6)
-This is the **only** shape Person A's frontend needs to know about for rendering. Do not deviate from this — it's fixed in the canonical spec.
+---
+
+## 5. Object #4 — Final Combined Result (Fixed Spec §6 Contract)
+This is the **only** shape Person A's frontend needs to render the results screen and share card.
 
 ```json
 {
-  "score": "number 0-100",
+  "submission_id": "string (UUID)",
+  "score": "number 0-100 (100 = highest trust, 0 = highest risk)",
   "verdict": "low_risk | medium_risk | high_risk",
   "flags": ["string", "..."],
   "tip": "string"
 }
 ```
 
+---
+
 ## 6. Object #5 — Feedback
-**Owner: Person A** (thumbs up/down UI + endpoint), feeds Person C's detection loop (spec §8 step 5).
+**Owner: Person A** (thumbs up/down UI + `/api/feedback` endpoint), feeds Person C's feedback loop (`scam_detection/feedback_loop.py`).
 
 ```json
 {
@@ -80,49 +86,50 @@ This is the **only** shape Person A's frontend needs to know about for rendering
 
 ---
 
-## 7. ⚠️ Open Item #1: Who Owns the Merge Step?
+## 7. Standardized Merge Logic (`merge/combine.py`)
 
-The canonical spec's data flow (§8) says Person B's and Person C's results "merge into one combined trust score + flag list," but doesn't assign an owner. My default assumption: it belongs with **Person A's light backend endpoints** (spec §7 already gives Person A "the light backend endpoints that serve those screens") — since the results screen needs the merged object, the endpoint Person A owns is the natural place to call B's function, call C's function, and combine them.
+Formula for combined trust score and verdict:
+```python
+risk_penalty = round(price_deviation_score * 0.4 + scam_score * 0.6)
+final_score = max(0, min(100, 100 - risk_penalty))
 
-**Confirm this as a team.** If someone disagrees, the fix is just moving one function — nothing above changes.
-
-Suggested merge logic (placeholder — tune weights as you test):
-```
-final_score = 100 - round(price_deviation_score * 0.4 + scam_score * 0.6)
-flags       = dedupe(price_flags + scam_flags)
-verdict     = "low_risk"    if final_score >= 70
-              "medium_risk" if final_score >= 40
-              "high_risk"   otherwise
+verdict = "low_risk"    if final_score >= 70
+          "medium_risk" if final_score >= 40
+          "high_risk"   otherwise
 ```
 
-## 8. ⚠️ Open Item #2: Category Enum
+---
 
-The spec mentions `category` as a form field but never fixes the list — and it needs to be **identical** in Person A's dropdown, Person B's price-reference collection, and Person C's prompt logic. Suggested starter set (edit freely, just lock it before coding):
-
+## 8. Category Enum
+Fixed set used across frontend dropdown, price reference data, and scam analysis:
 `Mobile Phones | Electronics | Vehicles | Furniture | Fashion | Property/Rent | Other`
 
 ---
 
-## 9. MongoDB Atlas (M0 free tier) — Collections
+## 9. MongoDB Atlas (M0 free tier) Schema & Fallback Architecture
 
-Given the timeline, one embedded document per submission beats a normalized multi-collection design — no joins, one read gets everything for the results screen and the share card.
-
-**Collection: `submissions`**
+### Collection: `submissions`
 ```json
 {
   "_id": "submission_id",
-  "input": { "title": "...", "description": "...", "price": 0, "category": "...", "seller_info": null, "submitted_at": "..." },
-  "price_analysis": { "price_deviation_score": 0, "price_flags": [], "category_reference_range": { "min": 0, "max": 0 } },
-  "scam_analysis": { "scam_score": 0, "scam_flags": [], "tip": "..." },
-  "result": { "score": 0, "verdict": "...", "flags": [], "tip": "..." },
-  "feedback": { "was_accurate": true, "submitted_at": "..." },
+  "input": {
+    "title": "...",
+    "description": "...",
+    "price": 0,
+    "category": "...",
+    "seller_info": null,
+    "client_session_id": "...",
+    "submitted_at": "ISO 8601"
+  },
+  "price_analysis": { ... },
+  "scam_analysis": { ... },
+  "result": { ... },
+  "feedback": { "was_accurate": true, "submitted_at": "ISO 8601" },
   "created_at": "ISO 8601"
 }
 ```
-`feedback` is `null` until the buyer votes.
 
-**Collection: `category_price_references`**
-Person B's seed/reference data — separate from `submissions` because it's static reference data, not per-request data, and Person B may update it independently of anyone else's code.
+### Collection: `category_price_references`
 ```json
 {
   "category": "string",
@@ -132,23 +139,7 @@ Person B's seed/reference data — separate from `submissions` because it's stat
 }
 ```
 
----
-
-## 10. Quick Reference — Who Writes What
-
-| Data | Written by | Collection |
-|---|---|---|
-| `submission_id` + `input` | Person A | `submissions.input` |
-| `price_analysis` | Person B | `submissions.price_analysis` |
-| `scam_analysis` | Person C | `submissions.scam_analysis` |
-| `result` (merged) | Person A *(see §7)* | `submissions.result` |
-| `feedback` | Person A (UI+endpoint) → read by Person C | `submissions.feedback` |
-| price reference data | Person B | `category_price_references` |
-
-**Suggested endpoints (Person A owns both):**
-- `POST /api/submit` → creates the `submissions` doc, calls Person B's and Person C's functions, writes `result`, returns Object #4 (§5) to the frontend.
-- `POST /api/feedback` → writes `feedback` onto the existing submission by `submission_id`.
-
----
-
-**How to use this:** paste this whole file (like the canonical spec) into any AI tool alongside the spec when generating code for your part — that way all three of you get identical field names even when working separately.
+### Offline & Resilience Architecture
+1. **Database Fallback:** If MongoDB is offline or unreachable, `db.py` handles exceptions gracefully (`db = None`), `reference_data.py` uses in-memory default category ranges, and submission endpoints return results without throwing 500 errors.
+2. **LLM Fallback:** If the Gemini API call fails or times out, `routes/submit.py` falls back to regex-based Pakistani scam pattern detection (`_fallback_scam_analysis`).
+3. **Frontend Fallback:** If the backend service is offline, `frontend/src/api/client.js` uses `mockApi.js` to ensure the UI remains fully functional.

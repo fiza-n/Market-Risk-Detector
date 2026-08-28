@@ -7,7 +7,7 @@ export function SubmitPage({ onSubmitListing, loading }) {
     <section className="mx-auto max-w-6xl px-5 py-10 md:py-16">
       <div className="max-w-3xl mb-10">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 font-mono text-xs text-primary shadow-xs">
-          <span className="size-2 rounded-full bg-emerald-600 animate-pulse" />
+          <span className="size-2 rounded-full bg-emerald-600 animate-pulse" aria-hidden="true" />
           Pakistani Marketplace Scam Shield
         </div>
 
